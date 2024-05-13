@@ -42,5 +42,17 @@ for link in links:
         anchor_tag += '{}="{}" '.format(attr, value)
     anchor_tag += "> {} </{}>".format(link['inner_text'], link['tag'])
     url = next((value for attr, value in link['attrs'] if attr == 'href'), '')
-    status = 'update' if any(keyword in url for keyword in ["https://w3.stg.td.com/td/intranet/tdwealth", "https://w3.td.com/td/intranet/tdwealth", "https://w3.td.com/td/intranet/legacy", "https://w3.stg.td.com/td/intranet/legacy"]) or url in ["https://w3.td.com/public/Intranet-Portal/", "https://w3.stg.td.com/public/Intranet-Portal/"] else ''
+    conditions = [
+        "https://w3.stg.td.com/td/intranet/tdwealth",
+        "https://w3.stg.td.com/td/myintranet/tdwealth",
+        "https://w3.td.com/td/intranet/tdwealth",
+        "https://w3.td.com/td/myintranet/tdwealth",
+        "https://w3.td.com/td/intranet/legacy",
+        "https://w3.td.com/td/myintranet/legacy",
+        "https://w3.stg.td.com/td/intranet/legacy",
+        "https://w3.stg.td.com/td/myintranet/legacy",
+        "https://w3.td.com/public/Intranet-Portal/",
+        "https://w3.stg.td.com/public/Intranet-Portal/"
+    ]
+    status = 'update' if url in conditions else ''
     print("{:<50} | {:<30} | {:<10}".format(anchor_tag, url, status))
