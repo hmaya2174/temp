@@ -1,0 +1,46 @@
+from html.parser import HTMLParser
+from urllib.parse import urljoin
+
+class LinkParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = []
+        self.current_tag = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            self.current_tag = {'tag': tag, 'attrs': attrs, 'inner_text': ''}
+    
+    def handle_endtag(self, tag):
+        if self.current_tag and tag == 'a':
+            self.links.append(self.current_tag)
+            self.current_tag = None
+    
+    def handle_data(self, data):
+        if self.current_tag:
+            self.current_tag['inner_text'] += data
+
+def extract_links_from_html(html_file):
+    with open(html_file, 'r') as file:
+        html_content = file.read()
+    
+    parser = LinkParser()
+    parser.feed(html_content)
+    
+    return parser.links
+
+# Example usage
+html_file = 'sample.html'  # Replace 'example.html' with the path to your HTML file
+links = extract_links_from_html(html_file)
+
+print("Links found in the HTML file:")
+print("{:<50} | {:<30} | {:<10}".format("Anchor Tag", "URL", "Status"))
+print("-" * 115)
+for link in links:
+    anchor_tag = "<{} ".format(link['tag'])
+    for attr, value in link['attrs']:
+        anchor_tag += '{}="{}" '.format(attr, value)
+    anchor_tag += "> {} </{}>".format(link['inner_text'], link['tag'])
+    url = next((value for attr, value in link['attrs'] if attr == 'href'), '')
+    status = 'update' if any(keyword in url for keyword in ["https://w3.stg.td.com/td/intranet/tdwealth", "https://w3.td.com/td/intranet/tdwealth", "https://w3.td.com/td/intranet/legacy", "https://w3.stg.td.com/td/intranet/legacy"]) or url in ["https://w3.td.com/public/Intranet-Portal/", "https://w3.stg.td.com/public/Intranet-Portal/"] else ''
+    print("{:<50} | {:<30} | {:<10}".format(anchor_tag, url, status))
