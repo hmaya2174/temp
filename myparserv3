@@ -1,0 +1,70 @@
+from html.parser import HTMLParser
+from urllib.parse import urljoin
+from datetime import datetime
+
+class LinkParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = []
+        self.current_tag = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            self.current_tag = {'tag': tag, 'attrs': attrs, 'inner_text': ''}
+    
+    def handle_endtag(self, tag):
+        if self.current_tag and tag == 'a':
+            self.links.append(self.current_tag)
+            self.current_tag = None
+    
+    def handle_data(self, data):
+        if self.current_tag:
+            self.current_tag['inner_text'] += data
+
+def extract_links_from_html(html_file):
+    with open(html_file, 'r') as file:
+        html_content = file.read()
+    
+    parser = LinkParser()
+    parser.feed(html_content)
+    
+    return parser.links
+
+# Example usage
+html_file = 'example.html'  # Replace 'example.html' with the path to your HTML file
+links = extract_links_from_html(html_file)
+
+print("Links found in the HTML file:")
+print("{:<50} | {:<30} | {:<10}".format("Anchor Tag", "URL", "Status"))
+print("-" * 115)
+
+conditions = [
+    "https://w3.stg.td.com/td/intranet/tdwealth",
+    "https://w3.stg.td.com/td/myintranet/tdwealth",
+    "https://w3.td.com/td/intranet/tdwealth",
+    "https://w3.td.com/td/myintranet/tdwealth",
+    "https://w3.td.com/td/intranet/legacy",
+    "https://w3.td.com/td/myintranet/legacy",
+    "https://w3.stg.td.com/td/intranet/legacy",
+    "https://w3.stg.td.com/td/myintranet/legacy",
+    "https://w3.td.com/public/Intranet-Portal/",
+    "https://w3.stg.td.com/public/Intranet-Portal/"
+]
+
+output_filename = "output_{}.txt".format(datetime.now().strftime("%Y%m%d_%H%M%S"))
+
+with open(output_filename, 'w') as output_file:
+    output_file.write("Links found in the HTML file:\n")
+    output_file.write("{:<50} | {:<30} | {:<10}\n".format("Anchor Tag", "URL", "Status"))
+    output_file.write("-" * 115 + "\n")
+
+    for link in links:
+        anchor_tag = "<{} ".format(link['tag'])
+        for attr, value in link['attrs']:
+            anchor_tag += '{}="{}" '.format(attr, value)
+        anchor_tag += "> {} </{}>".format(link['inner_text'], link['tag'])
+        url = next((value for attr, value in link['attrs'] if attr == 'href'), '')
+        status = 'update' if any(condition in url for condition in conditions) else ''
+        output_file.write("{:<50} | {:<30} | {:<10}\n".format(anchor_tag, url, status))
+
+print("Output saved to:", output_filename)
