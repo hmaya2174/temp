@@ -1,0 +1,53 @@
+import urllib.request
+from urllib.error import URLError, HTTPError
+from datetime import datetime
+import re
+
+def strip_html_tags(html_content):
+    """Remove HTML tags from a string."""
+    tag_re = re.compile(r'<[^>]+>')
+    return tag_re.sub('', html_content)
+
+def extract_relevant_text(html_content):
+    """Extract text following 'Tagged:' or 'Doc ID:'. Process HTML content to remove tags first."""
+    plain_text = strip_html_tags(html_content)
+    patterns = [r"Tagged:\s*(.*?)(\s|$|\n)", r"Doc ID:\s*(.*?)(\s|$|\n)"]
+    for pattern in patterns:
+        match = re.search(pattern, plain_text)
+        if match:
+            return match.group(1).strip()
+    return "No Value found"
+
+def format_url(url):
+    """Ensure the URL includes the HTTP/HTTPS protocol."""
+    if not url.startswith(('http://', 'https://')):
+        return 'http://' + url
+    return url
+
+def main():
+    input_filename = "input.txt"
+    output_filename = f"documentrepo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    
+    try:
+        with open(input_filename, 'r') as file:
+            urls = [format_url(url.strip()) for url in file.readlines()]
+    except FileNotFoundError:
+        print(f"Error: The file '{input_filename}' does not exist.")
+        return
+    
+    with open(output_filename, 'w') as outfile:
+        for url in urls:
+            try:
+                response = urllib.request.urlopen(url)
+                html_content = response.read().decode('utf-8')
+                extracted_text = extract_relevant_text(html_content)
+            except (HTTPError, URLError):
+                extracted_text = "Invalid URL"
+            except Exception as e:
+                print(f"An unexpected error occurred with {url}: {e}")
+                extracted_text = "Error processing URL"
+            
+            outfile.write(f"{url} | {extracted_text}\n")
+
+if __name__ == "__main__":
+    main()
