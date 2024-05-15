@@ -1,60 +1,46 @@
 import urllib.request
-import base64
+from urllib.error import URLError
 import re
-import datetime
+from datetime import datetime
 
-def find_links(html_content):
-    """Extracts all links from the given HTML content."""
-    link_pattern = re.compile(r'href=["\'](http[s]?://[^"\'\s]+)["\']')
-    return link_pattern.findall(html_content)
+def read_urls(filename):
+    with open(filename, 'r') as file:
+        urls = file.readlines()
+    if len(urls) > 2:
+        raise ValueError("Maximum of 2 URLs only")
+    return [url.strip() for url in urls]
 
-def check_url(url, username, password):
-    """Check if the URL is working or broken, with Basic Authentication."""
-    # Encode credentials in base64
-    credentials = base64.b64encode(f'{username}:{password}'.encode()).decode('utf-8')
-    headers = {
-        "Authorization": f"Basic {credentials}"
-    }
-    
-    req = urllib.request.Request(url, headers=headers)
-    
+def scan_links(url):
     try:
-        with urllib.request.urlopen(req) as response:
-            return "URL Working" if response.status == 200 else "Broken"
-    except:
+        response = urllib.request.urlopen(url)
+        data = response.read().decode('utf-8')
+        links = re.findall(r'href="(http[s]?://.*?)"', data)
+        return links
+    except URLError:
+        return []
+
+def check_link(url):
+    if 'myintranet' in url:
+        url = url.replace('myintranet', 'intranet')
+    try:
+        urllib.request.urlopen(url)
+        return "URL Working"
+    except URLError:
         return "Broken"
 
-def process_webpages(file_name, username, password):
-    with open(file_name, 'r') as file:
-        urls = file.readlines()
+def main():
+    try:
+        urls = read_urls("weblist.txt")
+        output_filename = "brokenLinksReport" + datetime.now().strftime("%Y%m%d%H%M%S") + ".txt"
+        with open(output_filename, 'w') as output_file:
+            for index, url in enumerate(urls, start=1):
+                links = scan_links(url)
+                for link in links:
+                    status = check_link(link)
+                    output_file.write(f"{index}|{link}|{status}\n")
+        print(f"Report generated: {output_filename}")
+    except ValueError as e:
+        print(str(e))
 
-    if len(urls) > 2:
-        print("Maximum of 2 URLs only")
-        return
-
-    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    output_file_name = f"brokenLinksReport{timestamp}.txt"
-    with open(output_file_name, 'w') as output_file:
-        output_file.write("Order|URL|Status\n")
-
-        for index, url in enumerate(urls):
-            url = url.strip()
-            try:
-                req = urllib.request.Request(url, headers={"Authorization": f"Basic {base64.b64encode(f'{username}:{password}'.encode()).decode('utf-8')}"})
-                with urllib.request.urlopen(req) as response:
-                    html_content = response.read().decode('utf-8')
-                    links = find_links(html_content)
-                    for link in links:
-                        status = check_url(link, username, password)
-                        output_file.write(f"{index + 1}|{link}|{status}\n")
-            except Exception as e:
-                output_file.write(f"{index + 1}|{url}|Broken due to {str(e)}\n")
-
-    print(f"Report generated: {output_file_name}")
-
-# Prompt for credentials at runtime
-username = input("Enter your username: ")
-password = input("Enter your password: ")
-
-# Make sure 'weblist.txt' exists in the same directory as this script.
-process_webpages('weblist.txt', username, password)
+if __name__ == "__main__":
+    main()
