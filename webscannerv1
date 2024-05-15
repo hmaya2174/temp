@@ -3,13 +3,16 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import re
 
-def extract_tagged_text(html_content):
-    """ Extract text following 'Tagged:' and clean it from HTML tags. """
+def extract_relevant_text(html_content):
+    """ Extract text following 'Tagged:' or 'Doc ID:' and clean it from HTML tags. """
     soup = BeautifulSoup(html_content, 'html.parser')
     text = soup.get_text()
-    match = re.search(r"Tagged:\s*(.*?)\s*(?:$|\n)", text)
-    if match:
-        return match.group(1).strip()
+    # Search for both patterns in the text
+    patterns = [r"Tagged:\s*(.*?)\s*(?:$|\n)", r"Doc ID:\s*(.*?)\s*(?:$|\n)"]
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1).strip()
     return "No Value found"
 
 def main():
@@ -22,13 +25,13 @@ def main():
     except FileNotFoundError:
         print(f"Error: The file '{input_filename}' does not exist.")
         return
-
+    
     with open(output_filename, 'w') as outfile:
         for url in urls:
             try:
                 response = requests.get(url)
                 response.raise_for_status()  # Raises an HTTPError for bad responses
-                extracted_text = extract_tagged_text(response.text)
+                extracted_text = extract_relevant_text(response.text)
             except requests.exceptions.RequestException:
                 extracted_text = "Invalid URL"
             
