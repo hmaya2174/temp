@@ -41,8 +41,8 @@ def generate_report(urls, report_filename):
                 # Replace 'myintranet' with 'intranet'
                 if 'myintranet' in link_url:
                     link_url = link_url.replace('myintranet', 'intranet')
-                # If the URL starts with '/td/intranet/', append 'https://w3.td.com'
-                if link_url.startswith('/td/intranet/'):
+                # If the URL starts with '/td/intranet/' or '/td/files/binary', append 'https://w3.td.com'
+                elif link_url.startswith('/td/intranet/') or link_url.startswith('/td/files/binary'):
                     link_url = 'https://w3.td.com' + link_url
                 
                 status = check_url(link_url)
