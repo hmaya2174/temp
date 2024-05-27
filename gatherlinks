@@ -1,0 +1,46 @@
+import urllib.request
+import re
+from datetime import datetime
+
+def read_urls(filename):
+    with open(filename, 'r') as file:
+        urls = [line.strip() for line in file]
+    return urls
+
+def fetch_html(url):
+    try:
+        with urllib.request.urlopen(url) as response:
+            return response.read().decode('utf-8')
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return ""
+
+def find_links(html):
+    pattern = re.compile(r'<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)</a>', re.IGNORECASE)
+    return pattern.findall(html)
+
+def generate_report(urls, report_filename):
+    with open(report_filename, 'w', encoding='utf-8') as report_file:
+        report_file.write("Order|URL|Link Title\n")
+        for i, url in enumerate(urls, 1):
+            html = fetch_html(url)
+            links = find_links(html)
+            for link in links:
+                link_url, link_title = link
+                report_file.write(f"{i}|{url}|{link_title.strip()}\n")
+
+def main():
+    filename = "weblist.txt"
+    urls = read_urls(filename)
+
+    if len(urls) > 2:
+        print("Maximum of 2 URLs only")
+        return
+
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    report_filename = f"gatherlinksreport_{timestamp}.txt"
+    generate_report(urls, report_filename)
+    print(f"Report generated: {report_filename}")
+
+if __name__ == "__main__":
+    main()
