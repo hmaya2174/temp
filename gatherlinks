@@ -27,7 +27,7 @@ def generate_report(urls, report_filename):
             links = find_links(html)
             for link in links:
                 link_url, link_title = link
-                report_file.write(f"{i}|{url}|{link_title.strip()}\n")
+                report_file.write(f"{i}|{link_url}|{link_title.strip()}\n")
 
 def main():
     filename = "weblist.txt"
