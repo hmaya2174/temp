@@ -1,0 +1,63 @@
+import urllib.request
+import re
+import datetime
+from urllib.error import URLError, HTTPError
+
+def read_urls(file_name):
+    with open(file_name, 'r') as file:
+        urls = file.readlines()
+    urls = [url.strip() for url in urls]
+    return urls
+
+def scan_images(url):
+    try:
+        response = urllib.request.urlopen(url)
+        page_content = response.read().decode('utf-8')
+        
+        image_tags = re.findall(r'<img [^>]*src="([^"]+)"[^>]*alt="([^"]*)"', page_content)
+        images = []
+        for image_src, alt_text in image_tags:
+            full_src = image_src
+            if 'myintranet' in image_src:
+                full_src = image_src.replace('myintranet', 'intranet')
+            elif image_src.startswith('/td/intranet/'):
+                full_src = 'https://w3.td.com' + image_src
+            elif image_src.startswith('/td/files/binary'):
+                full_src = 'https://w3.td.com' + image_src
+            
+            status = check_url(full_src)
+            images.append((full_src, alt_text, status))
+        
+        return images
+    except Exception as e:
+        print(f"Error scanning {url}: {e}")
+        return []
+
+def check_url(url):
+    try:
+        response = urllib.request.urlopen(url)
+        return "URL Working"
+    except (HTTPError, URLError):
+        return "Broken"
+
+def main():
+    file_name = "URLtoScanImages.txt"
+    output_file = "ImagesScan_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".txt"
+    
+    urls = read_urls(file_name)
+    if len(urls) > 100:
+        print("Maximum of 100 URLs only")
+        return
+
+    with open(output_file, 'w') as out_file:
+        out_file.write("Order|Image Src|Alternate Text|Status\n")
+        
+        for i, url in enumerate(urls):
+            images = scan_images(url)
+            for img_src, alt_text, status in images:
+                out_file.write(f"{i+1}|{img_src}|{alt_text}|{status}\n")
+    
+    print(f"Image scan results saved to {output_file}")
+
+if __name__ == "__main__":
+    main()
