@@ -11,6 +11,9 @@ def read_urls(file_name):
 
 def scan_images(url):
     try:
+        if not url.startswith('http://') and not url.startswith('https://'):
+            url = 'http://' + url
+        
         response = urllib.request.urlopen(url)
         page_content = response.read().decode('utf-8')
         
@@ -24,6 +27,9 @@ def scan_images(url):
                 full_src = 'https://w3.td.com' + image_src
             elif image_src.startswith('/td/files/binary'):
                 full_src = 'https://w3.td.com' + image_src
+            elif not image_src.startswith('http://') and not image_src.startswith('https://'):
+                parsed_url = urllib.parse.urljoin(url, image_src)
+                full_src = parsed_url
             
             status = check_url(full_src)
             images.append((full_src, alt_text, status))
